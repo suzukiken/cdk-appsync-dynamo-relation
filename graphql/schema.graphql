@@ -1,0 +1,27 @@
+type Product {
+  id: ID!
+  title: String!
+  variants: [ Variant ]
+}
+type Variant {
+	id: ID!
+	size: Int!
+	productId: ID!
+}
+type Query {
+  listProducts: [ Product ]
+  getProduct(id: ID!): Product
+  listVariants: [ Variant ]
+  listVariantsByProduct(productId: ID!): [ Variant ]
+}
+input ProductInput {
+  title: String!
+}
+input VariantInput {
+  size: Int!
+  productId: ID!
+}
+type Mutation {
+  addProduct(input: ProductInput!): Product
+  addVariant(input: VariantInput!): Variant
+}
