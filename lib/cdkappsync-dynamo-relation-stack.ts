@@ -72,7 +72,7 @@ export class CdkappsyncDynamoRelationStack extends cdk.Stack {
     // This is for batch write item relation
 
     variant_table.grantReadWriteData(product_datasource)
-    product_table.grantReadWriteData(variant_datasource)
+    // product_table.grantReadWriteData(variant_datasource)
     
     // AppSync Resolver
 
