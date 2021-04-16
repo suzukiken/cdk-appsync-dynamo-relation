@@ -1,27 +1,46 @@
 type Product {
-  id: ID!
-  title: String!
+  id: ID
+  title: String
   variants: [ Variant ]
 }
 type Variant {
+	id: ID
+	size: Int
+	productId: ID
+}
+type Query {
+  listProducts: [ Product! ]!
+  getProduct(id: ID!): Product
+  listVariants: [ Variant! ]!
+  listProductVariants(productId: ID!): [ Variant! ]!
+}
+input ProductAddInput {
+  title: String!
+}
+type ProductRecordResult {
+  id: ID!
+  title: String!
+}
+type VariantRecordResult {
 	id: ID!
 	size: Int!
 	productId: ID!
 }
-type Query {
-  listProducts: [ Product ]
-  getProduct(id: ID!): Product
-  listVariants: [ Variant ]
-  listVariantsByProduct(productId: ID!): [ Variant ]
+type RecordResult {
+  cdkappsyncdynamorelationProduct: [ ProductRecordResult! ]!
+  cdkappsyncdynamorelationVariant: [ VariantRecordResult! ]!
 }
-input ProductInput {
+input ProductUpdateInput {
+  id: ID!
   title: String!
 }
-input VariantInput {
+input VariantAddInput {
   size: Int!
   productId: ID!
 }
 type Mutation {
-  addProduct(input: ProductInput!): Product
-  addVariant(input: VariantInput!): Variant
+  addProduct(input: ProductAddInput!): Product
+  updateProduct(input: ProductUpdateInput!): Product
+  addVariant(input: VariantAddInput!): Variant
+  addProductWithDefaultVariant(input: ProductAddInput!): RecordResult
 }

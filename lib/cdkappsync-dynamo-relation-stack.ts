@@ -7,6 +7,7 @@ export class CdkappsyncDynamoRelationStack extends cdk.Stack {
     super(scope, id, props);
     
     const PREFIX_NAME = id.toLowerCase().replace("stack", "")
+    const TABLE_GSI_NAME = "productGsi"
 
     const api = new appsync.GraphqlApi(this, "api", {
       name: PREFIX_NAME + "-api",
@@ -24,7 +25,7 @@ export class CdkappsyncDynamoRelationStack extends cdk.Stack {
     })
 
     const product_table = new dynamodb.Table(this, "product_table", {
-      tableName: PREFIX_NAME + "-product",
+      tableName: PREFIX_NAME + "Product",
       partitionKey: {
         name: "id",
         type: dynamodb.AttributeType.STRING,
@@ -34,7 +35,7 @@ export class CdkappsyncDynamoRelationStack extends cdk.Stack {
     })
     
     const variant_table = new dynamodb.Table(this, "variant_table", {
-      tableName: PREFIX_NAME + "-variant",
+      tableName: PREFIX_NAME + "Variant",
       partitionKey: {
         name: "id",
         type: dynamodb.AttributeType.STRING,
@@ -44,29 +45,32 @@ export class CdkappsyncDynamoRelationStack extends cdk.Stack {
     })
 
     variant_table.addGlobalSecondaryIndex({
-      indexName: "product-gsi",
+      indexName: TABLE_GSI_NAME,
       partitionKey: {
         name: "productId",
         type: dynamodb.AttributeType.STRING,
       },
     })
-
+    
     const product_datasource = api.addDynamoDbDataSource(
       "product_datasource",
       product_table
     )
-
+    
     const variant_datasource = api.addDynamoDbDataSource(
       "variant_datasource",
       variant_table
     )
+
+    variant_table.grantReadWriteData(product_datasource)
+    product_table.grantReadWriteData(variant_datasource)
 
     product_datasource.createResolver({
       typeName: "Query",
       fieldName: "listProducts",
       requestMappingTemplate: appsync.MappingTemplate.dynamoDbScanTable(),
       responseMappingTemplate: appsync.MappingTemplate.dynamoDbResultList(),
-    });
+    })
 
     product_datasource.createResolver({
       typeName: "Query",
@@ -76,7 +80,7 @@ export class CdkappsyncDynamoRelationStack extends cdk.Stack {
         "id"
       ),
       responseMappingTemplate: appsync.MappingTemplate.dynamoDbResultItem(),
-    });
+    })
 
     product_datasource.createResolver({
       typeName: "Mutation",
@@ -87,6 +91,26 @@ export class CdkappsyncDynamoRelationStack extends cdk.Stack {
       ),
       responseMappingTemplate: appsync.MappingTemplate.dynamoDbResultItem(),
     })
+    
+    product_datasource.createResolver({
+      typeName: "Mutation",
+      fieldName: "updateProduct",
+      requestMappingTemplate: appsync.MappingTemplate.fromFile(
+        "mapping_template/update_product.vtl"
+      ),
+      responseMappingTemplate: appsync.MappingTemplate.dynamoDbResultItem()
+    })
+    
+    product_datasource.createResolver({
+      typeName: "Mutation",
+      fieldName: "addProductWithDefaultVariant",
+      requestMappingTemplate: appsync.MappingTemplate.fromFile(
+        "mapping_template/add_product_with_default_variant.vtl"
+      ),
+      responseMappingTemplate: appsync.MappingTemplate.fromFile(
+        "mapping_template/add_product_with_default_variant_result.vtl"
+      ),
+    })
 
     variant_datasource.createResolver({
       typeName: "Query",
@@ -94,52 +118,23 @@ export class CdkappsyncDynamoRelationStack extends cdk.Stack {
       requestMappingTemplate: appsync.MappingTemplate.dynamoDbScanTable(),
       responseMappingTemplate: appsync.MappingTemplate.dynamoDbResultList(),
     })
-    
-    // query string for list variants
-    // $context.arguments.productId
 
-    const query_string = `{
-      "version": "2017-02-28",
-      "operation": "Query",
-      "index": "product-gsi",
-      "query": {
-        "expression": "productId = :productId",
-        "expressionValues": {
-          ":productId": {
-            "S": $util.toJson($context.arguments.productId)
-          }
-        }
-      }
-    }`
-    
     variant_datasource.createResolver({
       typeName: "Query",
-      fieldName: "listVariantsByProduct",
-      requestMappingTemplate: appsync.MappingTemplate.fromString(query_string),
+      fieldName: "listProductVariants",
+      requestMappingTemplate: appsync.MappingTemplate.dynamoDbQuery(
+        appsync.KeyCondition.eq("productId", "productId"),
+        TABLE_GSI_NAME
+      ),  
       responseMappingTemplate: appsync.MappingTemplate.dynamoDbResultList(),
     })
     
-    // query string for list products with variants
-    // $context.source.productId
-    
-    const product_variants_relation_query_string = `{
-      "version": "2017-02-28",
-      "operation": "Query",
-      "index": "product-gsi",
-      "query": {
-        "expression": "productId = :productId",
-        "expressionValues": {
-          ":productId": {
-            "S": $util.toJson($context.source.id)
-          }
-        }
-      }
-    }`
-
     variant_datasource.createResolver({
       typeName: "Product",
       fieldName: "variants",
-      requestMappingTemplate: appsync.MappingTemplate.fromString(product_variants_relation_query_string),
+      requestMappingTemplate: appsync.MappingTemplate.fromFile(
+        "mapping_template/product_variant.vtl"
+      ),
       responseMappingTemplate: appsync.MappingTemplate.dynamoDbResultList(),
     })
 
@@ -152,5 +147,6 @@ export class CdkappsyncDynamoRelationStack extends cdk.Stack {
       ),
       responseMappingTemplate: appsync.MappingTemplate.dynamoDbResultItem(),
     })
+    
   }
 }
