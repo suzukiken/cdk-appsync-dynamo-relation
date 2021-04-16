@@ -8,6 +8,8 @@ export class CdkappsyncDynamoRelationStack extends cdk.Stack {
     
     const PREFIX_NAME = id.toLowerCase().replace("stack", "")
     const TABLE_GSI_NAME = "productGsi"
+    
+    // AppSync GraphQL API
 
     const api = new appsync.GraphqlApi(this, "api", {
       name: PREFIX_NAME + "-api",
@@ -23,6 +25,8 @@ export class CdkappsyncDynamoRelationStack extends cdk.Stack {
         filePath: "graphql/schema.graphql",
       }),
     })
+    
+    // Dynamo DB Tables
 
     const product_table = new dynamodb.Table(this, "product_table", {
       tableName: PREFIX_NAME + "Product",
@@ -52,6 +56,8 @@ export class CdkappsyncDynamoRelationStack extends cdk.Stack {
       },
     })
     
+    // AppSync Datasource
+    
     const product_datasource = api.addDynamoDbDataSource(
       "product_datasource",
       product_table
@@ -61,9 +67,14 @@ export class CdkappsyncDynamoRelationStack extends cdk.Stack {
       "variant_datasource",
       variant_table
     )
+    
+    // Grant access to another table
+    // This is for batch write item relation
 
     variant_table.grantReadWriteData(product_datasource)
     product_table.grantReadWriteData(variant_datasource)
+    
+    // AppSync Resolver
 
     product_datasource.createResolver({
       typeName: "Query",
@@ -100,17 +111,6 @@ export class CdkappsyncDynamoRelationStack extends cdk.Stack {
       ),
       responseMappingTemplate: appsync.MappingTemplate.dynamoDbResultItem()
     })
-    
-    product_datasource.createResolver({
-      typeName: "Mutation",
-      fieldName: "addProductWithDefaultVariant",
-      requestMappingTemplate: appsync.MappingTemplate.fromFile(
-        "mapping_template/add_product_with_default_variant.vtl"
-      ),
-      responseMappingTemplate: appsync.MappingTemplate.fromFile(
-        "mapping_template/add_product_with_default_variant_result.vtl"
-      ),
-    })
 
     variant_datasource.createResolver({
       typeName: "Query",
@@ -128,15 +128,6 @@ export class CdkappsyncDynamoRelationStack extends cdk.Stack {
       ),  
       responseMappingTemplate: appsync.MappingTemplate.dynamoDbResultList(),
     })
-    
-    variant_datasource.createResolver({
-      typeName: "Product",
-      fieldName: "variants",
-      requestMappingTemplate: appsync.MappingTemplate.fromFile(
-        "mapping_template/product_variant.vtl"
-      ),
-      responseMappingTemplate: appsync.MappingTemplate.dynamoDbResultList(),
-    })
 
     variant_datasource.createResolver({
       typeName: "Mutation",
@@ -146,6 +137,30 @@ export class CdkappsyncDynamoRelationStack extends cdk.Stack {
         appsync.Values.projecting("input")
       ),
       responseMappingTemplate: appsync.MappingTemplate.dynamoDbResultItem(),
+    })
+    
+    // Batch write resolver
+    
+    product_datasource.createResolver({
+      typeName: "Mutation",
+      fieldName: "addProductWithDefaultVariant",
+      requestMappingTemplate: appsync.MappingTemplate.fromFile(
+        "mapping_template/add_product_with_default_variant.vtl"
+      ),
+      responseMappingTemplate: appsync.MappingTemplate.fromFile(
+        "mapping_template/add_product_with_default_variant_result.vtl"
+      ),
+    })
+    
+    // Resolver for relation
+    
+    variant_datasource.createResolver({
+      typeName: "Product",
+      fieldName: "variants",
+      requestMappingTemplate: appsync.MappingTemplate.fromFile(
+        "mapping_template/product_variant.vtl"
+      ),
+      responseMappingTemplate: appsync.MappingTemplate.dynamoDbResultList(),
     })
     
   }
