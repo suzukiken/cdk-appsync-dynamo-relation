@@ -162,6 +162,6 @@ export class CdkappsyncDynamoRelationStack extends cdk.Stack {
       ),
       responseMappingTemplate: appsync.MappingTemplate.dynamoDbResultList(),
     })
-    
+  
   }
 }
