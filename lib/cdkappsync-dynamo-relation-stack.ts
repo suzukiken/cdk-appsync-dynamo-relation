@@ -68,12 +68,6 @@ export class CdkappsyncDynamoRelationStack extends cdk.Stack {
       variant_table
     )
     
-    // Grant access to another table
-    // This is for batch write item relation
-
-    variant_table.grantReadWriteData(product_datasource)
-    // product_table.grantReadWriteData(variant_datasource)
-    
     // AppSync Resolver
 
     product_datasource.createResolver({
@@ -84,16 +78,6 @@ export class CdkappsyncDynamoRelationStack extends cdk.Stack {
     })
 
     product_datasource.createResolver({
-      typeName: "Query",
-      fieldName: "getProduct",
-      requestMappingTemplate: appsync.MappingTemplate.dynamoDbGetItem(
-        "id",
-        "id"
-      ),
-      responseMappingTemplate: appsync.MappingTemplate.dynamoDbResultItem(),
-    })
-
-    product_datasource.createResolver({
       typeName: "Mutation",
       fieldName: "addProduct",
       requestMappingTemplate: appsync.MappingTemplate.dynamoDbPutItem(
@@ -101,15 +85,6 @@ export class CdkappsyncDynamoRelationStack extends cdk.Stack {
         appsync.Values.projecting("input")
       ),
       responseMappingTemplate: appsync.MappingTemplate.dynamoDbResultItem(),
-    })
-    
-    product_datasource.createResolver({
-      typeName: "Mutation",
-      fieldName: "updateProduct",
-      requestMappingTemplate: appsync.MappingTemplate.fromFile(
-        "mapping_template/update_product.vtl"
-      ),
-      responseMappingTemplate: appsync.MappingTemplate.dynamoDbResultItem()
     })
 
     variant_datasource.createResolver({
@@ -137,19 +112,6 @@ export class CdkappsyncDynamoRelationStack extends cdk.Stack {
         appsync.Values.projecting("input")
       ),
       responseMappingTemplate: appsync.MappingTemplate.dynamoDbResultItem(),
-    })
-    
-    // Batch write resolver
-    
-    product_datasource.createResolver({
-      typeName: "Mutation",
-      fieldName: "addProductWithDefaultVariant",
-      requestMappingTemplate: appsync.MappingTemplate.fromFile(
-        "mapping_template/add_product_with_default_variant.vtl"
-      ),
-      responseMappingTemplate: appsync.MappingTemplate.fromFile(
-        "mapping_template/add_product_with_default_variant_result.vtl"
-      ),
     })
     
     // Resolver for relation

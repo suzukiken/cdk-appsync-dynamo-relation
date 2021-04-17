@@ -10,28 +10,10 @@ type Variant {
 }
 type Query {
   listProducts: [ Product! ]!
-  getProduct(id: ID!): Product
   listVariants: [ Variant! ]!
   listProductVariants(productId: ID!): [ Variant! ]!
 }
 input ProductAddInput {
-  title: String!
-}
-type ProductRecordResult {
-  id: ID!
-  title: String!
-}
-type VariantRecordResult {
-	id: ID!
-	size: Int!
-	productId: ID!
-}
-type RecordResult {
-  cdkappsyncdynamorelationProduct: [ ProductRecordResult! ]!
-  cdkappsyncdynamorelationVariant: [ VariantRecordResult! ]!
-}
-input ProductUpdateInput {
-  id: ID!
   title: String!
 }
 input VariantAddInput {
@@ -40,7 +22,5 @@ input VariantAddInput {
 }
 type Mutation {
   addProduct(input: ProductAddInput!): Product
-  updateProduct(input: ProductUpdateInput!): Product
   addVariant(input: VariantAddInput!): Variant
-  addProductWithDefaultVariant(input: ProductAddInput!): RecordResult
 }
