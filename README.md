@@ -5,4 +5,4 @@ To deploy AppSync Api with two Dynamo DB tables which has relation.
 * `npm install`
 * `cdk deploy`
 
-[description](https://figmentresearch.com/aws/cdkappsync-dynamo-relation)
+[description](https://note.figmentresearch.com/aws/cdkappsync-dynamo-relation)
